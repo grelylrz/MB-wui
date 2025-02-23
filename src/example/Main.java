@@ -41,8 +41,8 @@ import static arc.Core.*;
 
 public class Main {
     public static Platform platform = new Platform(){};
-    Net net = new Net(platform.getNet());
-    public void main(String[] args) {
+    static Net net = new Net(platform.getNet());
+    public static void main(String[] args) {
         Log.info("Started!");
 
         // region packet

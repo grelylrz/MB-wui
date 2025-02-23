@@ -36,6 +36,7 @@ import mindustry.world.blocks.storage.*;
 import mindustry.world.meta.*;
 
 import java.io.*;
+import java.net.Socket;
 import java.nio.charset.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -43,25 +44,37 @@ import java.util.concurrent.*;
 import static arc.Core.*;
 
 public class Main {
-
+    public static int port = 6571;
+    public static String ip = "121.127.37.17";
     public static void main(String[] args) {
         if (args != null)
             Log.info(args);
-        Vars.net = new Net(new Platform().getNet());
-        Vars.net.connect("121.127.37.17", 6571, () -> {
-            Log.info("Connected to server!");
+        // region packet
+        var c = new Packets.ConnectPacket();
+        c.name = "grely test bot";
+        c.locale = "ru";
+        c.mods = new Seq<>();
+        c.mobile = false;
+        c.versionType = "official";
+        c.color = 1111260159;
+        c.usid = "pWx0+DFqzGE=";
+        c.uuid = "+nBf/gh4cLM=";
+        // endregion
 
-            var c = new Packets.ConnectPacket();
-            c.name = "grely test bot";
-            c.locale = "ru";
-            c.mods = new Seq<>();
-            c.mobile = false;
-            c.versionType = "official";
-            c.color = 1111260159;
-            c.usid = "pWx0+DFqzGE=";
-            c.uuid = "+nBf/gh4cLM=";
+        // region sendPacket
+        snedAndListen(c);
+    }
 
-            Vars.net.send(c, true);
-        });
+    public static Object sendAndListen(Packets.ConnectPacket packet) {
+        try (Socket socket = new Socket(ip, port)) {
+            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            out.writeObject(packet);
+            out.flush();
+            ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
+            return in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

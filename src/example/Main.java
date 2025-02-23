@@ -62,7 +62,8 @@ public class Main {
         // endregion
 
         // region sendPacket
-        snedAndListen(c);
+        Object result = sendAndListen(c);
+        Log.info(result);
     }
 
     public static Object sendAndListen(Packets.ConnectPacket packet) {

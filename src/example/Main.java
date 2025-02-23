@@ -9,6 +9,9 @@ import arc.scene.ui.layout.*;
 import arc.struct.*;
 import arc.util.*;
 import arc.util.Log.*;
+import mindustry.Vars;
+import mindustry.Vars.*;
+import static mindustry.Vars.*;
 import mindustry.ai.*;
 import mindustry.async.*;
 import mindustry.core.*;
@@ -40,16 +43,14 @@ import java.util.concurrent.*;
 import static arc.Core.*;
 
 public class Main {
-    public static Platform platform = new Platform(){};
-    static Net net = new Net(platform.getNet());
+
     public static void main(String[] args) {
-        Log.info("Started!");
+        if (args != null)
+            Log.info(args);
+        Vars.net = new Net(new Platform().getNet());
+        Vars.net.connect("121.127.37.17", 6571, () -> {
+            Log.info("Connected to server!");
 
-        // Подключаемся к серверу
-        net.connect("121.127.37.17", 6571, () -> {
-            Log.info("Connected!");
-
-            // Отправляем пакет после подключения
             var c = new Packets.ConnectPacket();
             c.name = "grely test bot";
             c.locale = "ru";
@@ -60,7 +61,7 @@ public class Main {
             c.usid = "pWx0+DFqzGE=";
             c.uuid = "+nBf/gh4cLM=";
 
-            net.send(c, true); // Теперь соединение уже установлено
+            Vars.net.send(c, true);
         });
     }
 }

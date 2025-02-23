@@ -11,5 +11,5 @@ public class BVars {
     public static Platform platform = new Platform() {};
     public static Net.NetProvider ale = platform.getNet();
     public static Net net2 = new Net(ale);
-    public static NetClient client = new NetClient();
+    // public static NetClient client = new NetClient();
 }

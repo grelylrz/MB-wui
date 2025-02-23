@@ -8,6 +8,7 @@ import mindustry.Vars;
 import mindustry.gen.*;
 import mindustry.net.*;
 import static mindustry.Vars.*;
+import mindustry.core.NetClient;
 
 import static example.BVars.*;
 
@@ -15,6 +16,8 @@ public class Main {
     public static void main(String[] args) {
         Vars.loadLogger();
         net = net2;
+        NetClient client2 = new NetClient();
+        netClient = client2;
         if(args != null && args.length > 0) {
             for (String arg : args) {
                 Log.info(arg);
@@ -32,7 +35,7 @@ public class Main {
         c.uuid = "+nBf/gh4cLM=";
         // region send
         //send(c, true);
-        client.connect("121.127.37.17", 6571);
+        client2.connect("121.127.37.17", 6571);
     }
 
     public static void send(Object object, boolean reliable){

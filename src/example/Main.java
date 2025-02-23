@@ -45,16 +45,22 @@ public class Main {
     public static void main(String[] args) {
         Log.info("Started!");
 
-        // region packet
-        var c = new Packets.ConnectPacket();
-        c.name = "grely test bot";
-        c.locale = "ru";
-        c.mods = new Seq<>();
-        c.mobile = false;
-        c.versionType = "official";
-        c.color = 1111260159;
-        c.usid = "pWx0+DFqzGE=";
-        c.uuid = "+nBf/gh4cLM=";
-        net.send(c, true);
+        // Подключаемся к серверу
+        net.connect("121.127.37.17", 6571, () -> {
+            Log.info("Connected!");
+
+            // Отправляем пакет после подключения
+            var c = new Packets.ConnectPacket();
+            c.name = "grely test bot";
+            c.locale = "ru";
+            c.mods = new Seq<>();
+            c.mobile = false;
+            c.versionType = "official";
+            c.color = 1111260159;
+            c.usid = "pWx0+DFqzGE=";
+            c.uuid = "+nBf/gh4cLM=";
+
+            net.send(c, true); // Теперь соединение уже установлено
+        });
     }
 }

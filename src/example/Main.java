@@ -1,10 +1,12 @@
 package example;
 
 import arc.Core;
+import arc.func.Cons;
 import arc.math.Rand;
 import arc.util.Log;
 import arc.struct.*;
 import arc.util.Time;
+import arc.util.io.ReusableByteInStream;
 import arc.util.serialization.Base64Coder;
 import mindustry.Vars;
 import mindustry.content.UnitTypes;
@@ -19,11 +21,23 @@ import mindustry.core.NetClient;
 import mindustry.logic.*;
 import mindustry.type.*;
 
+import java.io.DataInputStream;
 import java.util.zip.InflaterInputStream;
 
 import static example.BVars.*;
 
 public class Main {
+
+    /** List of entities that were removed, and need not be added while syncing. */
+    private IntSet removed = new IntSet();
+    /** Byte stream for reading in snapshots. */
+    private ReusableByteInStream byteStream = new ReusableByteInStream();
+    private DataInputStream dataStream = new DataInputStream(byteStream);
+    /** Packet handlers for custom types of messages. */
+    private ObjectMap<String, Seq<Cons<String>>> customPacketHandlers = new ObjectMap<>();
+    /** Packet handlers for custom types of messages, in binary. */
+    private ObjectMap<String, Seq<Cons<byte[]>>> customBinaryPacketHandlers = new ObjectMap<>();
+
     public static void main(String[] args) {
         Vars.loadLogger();
         net = net2;
@@ -42,7 +56,9 @@ public class Main {
             }
         }
         // region packet
-        Log.info("generationg packet");
+        Log.info("generating packet");
+        String test = randomString();
+        Log.info(test + " " + test.length());
         var c = new Packets.ConnectPacket();
         c.name = "grely test bot";
         c.locale = "ru";
@@ -50,21 +66,19 @@ public class Main {
         c.mobile = false;
         c.versionType = "official";
         c.color = 1111260159;
-        c.usid = "pWx0+DFqzGE=";
-        c.uuid = "+nBf/gh4cLM=";
+        c.usid = randomString();
+        c.uuid = randomString();
         // region send
         send(c, true);
         //client2.connect("121.127.37.17", 6571);
         net2.handleClient(Packets.WorldStream.class, data -> {
             Log.info("Received world data: @ bytes.", data.stream.available());
-            NetworkIO.loadWorld(new InflaterInputStream(data.stream));
-
             finishConnecting();
         });
     }
 
     public static void send(Object object, boolean reliable){
-        // Log.info("send used"); // DEBUG
+        Log.info("send used"); // DEBUG
         ale.sendClient(object, reliable);
     }
 
@@ -74,12 +88,12 @@ public class Main {
         send(packet, true);
     }
 
-    public void disconnect(){
+    public static void disconnect(){
         Log.info("Disconnecting.");
         ale.disconnectClient();
     }
 
-    public String randomString() {
+    public static String randomString() {
         byte[] bytes = new byte[8];
         new Rand().nextBytes(bytes);
         String result = new String(Base64Coder.encode(bytes));
@@ -89,6 +103,6 @@ public class Main {
     private static void finishConnecting(){
         state.set(GameState.State.playing);
         net.setClientLoaded(true);
-        Core.app.post(Call::connectConfirm);
+        confirm();
     }
 }

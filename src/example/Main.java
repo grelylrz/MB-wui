@@ -1,6 +1,7 @@
 package example;
 
 import arc.Core;
+import arc.graphics.Color;
 import arc.math.Rand;
 import arc.net.Client;
 import arc.net.NetListener;
@@ -17,6 +18,7 @@ import mindustry.net.*;
 import mindustry.net.Packets.*;
 
 import java.io.IOException;
+import java.util.Random;
 import java.util.TimerTask;
 import java.util.zip.InflaterInputStream;
 
@@ -64,6 +66,8 @@ public class Main{
         Vars.loadLogger();
         net = net2;
         Vars.netClient = new NetClient();
+        logic = new Logic();
+        Groups.init();
         Log.info("Inited");
         if(args != null) {
             for (String arg : args) {
@@ -121,20 +125,32 @@ public class Main{
         Log.info("Bot locale " + locale);
         Log.info("Adding handlers...");
         Events.on(EventType.PlayerChatEvent.class, e -> {
-            Log.info(e.player.plainName() + " " + e.message);
+            Log.info(e.player.plainName() + " " + e.message); // TODO
         });
         net2.handleClient(Connect.class, packet -> {
             Log.info("Connecting to server: @", packet.addressTCP);
             var c = new Packets.ConnectPacket();
-            c.name = "grely test bot";
+
+            String uuid = randomString();
+            String usid = randomString();
+            int color = new Random().nextInt(999999);;
+            String name = "grely test bot";
+
+            c.name = name;
             c.locale = locale;
             c.mods = new Seq<>();
             c.mobile = false;
             c.versionType = "official";
-            c.color = 749469439;
-            c.usid = randomString();
-            c.uuid = randomString();
+            c.color = color;
+            c.usid = usid;
+            c.uuid = uuid;
             net2.send(c, true);
+
+            Player zz = Player.create();
+            zz.name = name;
+            zz.locale = locale;
+            zz.color.set(color);
+            Vars.player = zz;
         });
         net2.handleClient(Disconnect.class, packet -> {
             if(packet.reason != null){
@@ -157,12 +173,18 @@ public class Main{
         });
         net2.handleClient(SendMessageCallPacket.class, data -> {
             Log.info("Message packet!");
+            Log.info(data.message);
         });
         net2.handleClient(SendChatMessageCallPacket.class, data -> {
             Log.info("Chat packet!");
         });
         net2.handleClient(SendMessageCallPacket2.class, data -> {
             Log.info("Message packet2!");
+            if(data.playersender != null) {
+                Log.info(data.playersender.name + ": " + data.message + "(" + data.unformatted + ")");
+            } else {
+                Log.info(data.message + "(" + data.unformatted + ")");
+            }
         });
         Log.info("Handlers added");
         try {
@@ -175,10 +197,11 @@ public class Main{
         }
 
         // region shiza2
-
         Timer.schedule(() -> {
-            connectConfirmm();
-            // myConnect();
+            Log.info("finishing connect.");
+            finishConnecting();
+        }, 5);
+        Timer.schedule(() -> {
             message("test");
         }, 0, 5);
         while (true) {} // for stupid reasons
@@ -190,27 +213,14 @@ public class Main{
         return new String(Base64Coder.encode(bytes));
     }
 
-    public static void myConnect() {
-        var c = new Packets.ConnectPacket();
-        c.name = "grely test bot";
-        c.locale = locale;
-        c.mods = new Seq<>();
-        c.mobile = false;
-        c.versionType = "official";
-        c.color = 749469439;
-        c.usid = randomString();
-        c.uuid = randomString();
-        net2.send(c, true);
-    }
-
     public static void connectConfirmm() {
         ConnectConfirmCallPacket packet = new ConnectConfirmCallPacket();
         net2.send(packet, true);
     }
 
     public static void finishConnecting(){
-        net2.setClientLoaded(true);
         connectConfirmm();
+        net2.setClientLoaded(true);
     }
 
     public static void message(String message){
@@ -219,7 +229,5 @@ public class Main{
         net2.send(packet, true);
     }
 
-    public static void addMessage(String message) {
-        Log.info(message);
-    }
+
 }

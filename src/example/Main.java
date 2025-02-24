@@ -11,8 +11,11 @@ import arc.util.serialization.Base64Coder;
 import mindustry.Vars;
 import mindustry.core.NetClient;
 import mindustry.core.Platform;
+import mindustry.game.EventType;
+import mindustry.gen.Building;
 import mindustry.gen.ConnectConfirmCallPacket;
 import mindustry.gen.SendChatMessageCallPacket;
+import mindustry.gen.SendMessageCallPacket;
 import mindustry.net.*;
 import mindustry.net.Packets.*;
 
@@ -100,7 +103,7 @@ public class Main{
                     try {
                         runnable.run();
                     } catch (Exception e) {
-                        // Log.err(e);
+                        // Log.err(e); // TODO.
                     }
                 });
             }
@@ -120,6 +123,9 @@ public class Main{
         }
         Log.info("Bot locale " + locale);
         Log.info("Adding handlers...");
+        Events.on(EventType.PlayerChatEvent.class, e -> {
+            Log.info(e.player.plainName() + " " + e.message);
+        });
         net2.handleClient(Connect.class, packet -> {
             Log.info("Connecting to server: @", packet.addressTCP);
             var c = new Packets.ConnectPacket();
@@ -152,7 +158,9 @@ public class Main{
 
             finishConnecting();
         });
-
+        net2.handleClient(SendMessageCallPacket.class, data -> {
+            Log.info("Chat packet!");
+        });
         Log.info("Handlers added");
         try {
             Log.info("Trying to connect...");
@@ -163,12 +171,14 @@ public class Main{
             Log.err("Error!", e);
         }
 
+        // region shiza2
+
         Timer.schedule(() -> {
             connectConfirmm();
             // myConnect();
             message("test");
-        }, 5); // for stupid reasons
-        while (true) {}
+        }, 0, 5);
+        while (true) {} // for stupid reasons
     }
 
     public static String randomString() {
@@ -204,5 +214,9 @@ public class Main{
         SendChatMessageCallPacket packet = new SendChatMessageCallPacket();
         packet.message = message;
         net2.send(packet, true);
+    }
+
+    public static void addMessage(String message) {
+        Log.info(message);
     }
 }

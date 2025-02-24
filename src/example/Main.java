@@ -1,5 +1,6 @@
 package example;
 
+import arc.Core;
 import arc.math.Rand;
 import arc.net.Client;
 import arc.util.Log;
@@ -21,6 +22,20 @@ import java.net.*;
 import java.util.Locale;
 import arc.net.Client.*;
 import java.nio.channels.ClosedSelectorException;
+import arc.Application;
+import arc.*;
+import arc.util.*;
+import mindustry.*;
+import mindustry.core.*;
+import mindustry.ctype.*;
+import mindustry.game.EventType.*;
+import mindustry.mod.*;
+import mindustry.mod.Mods.*;
+import mindustry.net.Net;
+import mindustry.net.*;
+import mindustry.ui.*;
+import arc.Core;
+import arc.ApplicationListener;
 
 import static mindustry.Vars.*;
 import static example.BVars.*;
@@ -33,12 +48,13 @@ https://github.com/Anuken/Mindustry/blob/master/core/src/mindustry/core/NetClien
 https://github.com/Anuken/Arc/blob/master/extensions/arcnet/src/arc/net/Client.java
  */
 
-public class Main {
+public class Main{
     static Platform platform = new Platform() {};
     static Net.NetProvider ale = platform.getNet();
     static Net net2 = new Net(ale);
     static ArcNetProvider p = new ArcNetProvider();
     static Client client;
+    private static final TaskQueue runnables = new TaskQueue();
     public static void main(String[] args) {
         Vars.loadLogger();
         net = net2;
@@ -49,6 +65,38 @@ public class Main {
                 Log.info(arg);
             }
         }
+        // region shiza
+        Core.app = new Application() {
+            @Override
+            public Seq<ApplicationListener> getListeners() {
+                return null;
+            }
+
+            @Override
+            public ApplicationType getType() {
+                return null;
+            }
+
+            @Override
+            public String getClipboardText() {
+                return "";
+            }
+
+            @Override
+            public void setClipboardText(String s) {
+
+            }
+
+            @Override
+            public void post(Runnable runnable){
+                Threads.daemon(runnable);
+            }
+
+            @Override
+            public void exit() {
+
+            }
+        };
         // region packet
         client = new Client(8192, 16384, new PacketSerializer());
         Log.info("generating packet");
@@ -93,12 +141,13 @@ public class Main {
         Log.info("Handlers added");
         try {
             Log.info("Trying to connect...");
-            connectClient(ip, pport, () -> {
+            p.connectClient(ip, pport, () -> {
                 Log.info("Connecting to " + ip + ":" + pport);
             });
         } catch (Exception e) {
             Log.err("Error!", e);
         }
+        while (true) {}
     }
 
     public static String randomString() {
@@ -115,29 +164,5 @@ public class Main {
     public static void finishConnecting(){
         net2.setClientLoaded(true);
         connectConfirmm();
-    }
-
-    public static void connectClient(String ip, int port, Runnable success) {
-        /*Threads.start(() -> {*/
-            try {
-                Log.info("Connecting to " + ip + ":" + port);
-                client.connect(50000, ip, port, port);
-                Threads.daemon("Client Update", () -> {
-                    try {
-                        while (client.isConnected()) {
-                            client.update(500);
-                        }
-                    } catch (IOException e) {
-                        Log.err("Error during client update", e);
-                    }
-                });
-                Log.info("Connected to " + ip + ":" + port);
-                success.run();
-                Log.info("Your code runned after connection");
-
-            } catch (Exception e) {
-                Log.err("Error during connection", e);
-            }
-        /*});*/
     }
 }

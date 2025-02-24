@@ -3,6 +3,7 @@ package example;
 import arc.Core;
 import arc.math.Rand;
 import arc.net.Client;
+import arc.net.NetListener;
 import arc.util.Log;
 import arc.struct.*;
 import arc.util.Threads;
@@ -11,10 +12,12 @@ import mindustry.Vars;
 import mindustry.core.NetClient;
 import mindustry.core.Platform;
 import mindustry.gen.ConnectConfirmCallPacket;
+import mindustry.gen.SendChatMessageCallPacket;
 import mindustry.net.*;
 import mindustry.net.Packets.*;
 
 import java.io.IOException;
+import java.util.TimerTask;
 import java.util.zip.InflaterInputStream;
 
 import mindustry.net.ArcNetProvider.*;
@@ -55,6 +58,8 @@ public class Main{
     static ArcNetProvider p = new ArcNetProvider();
     static Client client;
     private static final TaskQueue runnables = new TaskQueue();
+    static String locale = Locale.getDefault().toString();
+    private static final Seq<ApplicationListener> listeners = new Seq<>();
     public static void main(String[] args) {
         Vars.loadLogger();
         net = net2;
@@ -68,33 +73,41 @@ public class Main{
         // region shiza
         Core.app = new Application() {
             @Override
-            public Seq<ApplicationListener> getListeners() {
-                return null;
+            public Seq<ApplicationListener> getListeners(){
+                return listeners;
             }
 
             @Override
             public ApplicationType getType() {
+                Log.info("GetType used");
                 return null;
             }
 
             @Override
             public String getClipboardText() {
+                Log.info("getCLTestUsed used");
                 return "";
             }
 
             @Override
             public void setClipboardText(String s) {
-
+                Log.info("setClText used");
             }
 
             @Override
             public void post(Runnable runnable){
-                Threads.daemon(runnable);
+                Threads.daemon(() -> {
+                    try {
+                        runnable.run();
+                    } catch (Exception e) {
+                        // Log.err(e);
+                    }
+                });
             }
 
             @Override
             public void exit() {
-
+                Log.info("Exit used");
             }
         };
         // region packet
@@ -105,7 +118,6 @@ public class Main{
         if(test.length() != 12) {
             Log.err("Your usid/uuid gen is gen's >/< than 12 symb.");
         }
-        String locale = Locale.getDefault().toString();
         Log.info("Bot locale " + locale);
         Log.info("Adding handlers...");
         net2.handleClient(Connect.class, packet -> {
@@ -131,6 +143,8 @@ public class Main{
             } else{
                 Log.warn("Connect.closed");
             }
+            Log.warn("Con. closed, re-joining");
+            main(args);
         });
         net2.handleClient(WorldStream.class, data -> {
             Log.info("Received world data: @ bytes.", data.stream.available());
@@ -138,15 +152,22 @@ public class Main{
 
             finishConnecting();
         });
+
         Log.info("Handlers added");
         try {
             Log.info("Trying to connect...");
-            p.connectClient(ip, pport, () -> {
+            net2.connect(ip, pport, () -> {
                 Log.info("Connecting to " + ip + ":" + pport);
             });
         } catch (Exception e) {
             Log.err("Error!", e);
         }
+
+        Timer.schedule(() -> {
+            connectConfirmm();
+            // myConnect();
+            message("test");
+        }, 5); // for stupid reasons
         while (true) {}
     }
 
@@ -154,6 +175,19 @@ public class Main{
         byte[] bytes = new byte[8];
         new Rand().nextBytes(bytes);
         return new String(Base64Coder.encode(bytes));
+    }
+
+    public static void myConnect() {
+        var c = new Packets.ConnectPacket();
+        c.name = "grely test bot";
+        c.locale = locale;
+        c.mods = new Seq<>();
+        c.mobile = false;
+        c.versionType = "official";
+        c.color = 749469439;
+        c.usid = randomString();
+        c.uuid = randomString();
+        net2.send(c, true);
     }
 
     public static void connectConfirmm() {
@@ -164,5 +198,11 @@ public class Main{
     public static void finishConnecting(){
         net2.setClientLoaded(true);
         connectConfirmm();
+    }
+
+    public static void message(String message){
+        SendChatMessageCallPacket packet = new SendChatMessageCallPacket();
+        packet.message = message;
+        net2.send(packet, true);
     }
 }

@@ -12,10 +12,7 @@ import mindustry.Vars;
 import mindustry.core.NetClient;
 import mindustry.core.Platform;
 import mindustry.game.EventType;
-import mindustry.gen.Building;
-import mindustry.gen.ConnectConfirmCallPacket;
-import mindustry.gen.SendChatMessageCallPacket;
-import mindustry.gen.SendMessageCallPacket;
+import mindustry.gen.*;
 import mindustry.net.*;
 import mindustry.net.Packets.*;
 
@@ -66,7 +63,7 @@ public class Main{
     public static void main(String[] args) {
         Vars.loadLogger();
         net = net2;
-        netClient = new NetClient();
+        Vars.netClient = new NetClient();
         Log.info("Inited");
         if(args != null) {
             for (String arg : args) {
@@ -159,7 +156,13 @@ public class Main{
             finishConnecting();
         });
         net2.handleClient(SendMessageCallPacket.class, data -> {
+            Log.info("Message packet!");
+        });
+        net2.handleClient(SendChatMessageCallPacket.class, data -> {
             Log.info("Chat packet!");
+        });
+        net2.handleClient(SendMessageCallPacket2.class, data -> {
+            Log.info("Message packet2!");
         });
         Log.info("Handlers added");
         try {

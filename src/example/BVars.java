@@ -5,7 +5,7 @@ import mindustry.core.Platform;
 import mindustry.net.Net;
 
 public class BVars {
-    public static int port = 6571;
+    public static int pport = 6571;
     public static String ip = "121.127.37.17";
     // region packet send
     public static Platform platform = new Platform() {};

@@ -22,6 +22,7 @@ import mindustry.logic.*;
 import mindustry.type.*;
 
 import java.io.DataInputStream;
+import java.util.Locale;
 import java.util.zip.InflaterInputStream;
 
 import static example.BVars.*;
@@ -58,23 +59,29 @@ public class Main {
         // region packet
         Log.info("generating packet");
         String test = randomString();
-        Log.info(test + " " + test.length());
+        Log.info("Your usid/uuid gen result " + test + " " + test.length());
+        if(test.length() > 12 || test.length() < 12) {
+            Log.err("Your usid/uuid gen is gen's >/< than 12 symb.");
+        }
         var c = new Packets.ConnectPacket();
         c.name = "grely test bot";
-        c.locale = "ru";
+        c.locale = Locale.getDefault().toString();;
         c.mods = new Seq<>();
         c.mobile = false;
         c.versionType = "official";
-        c.color = 1111260159;
+        c.color = 749469439;
         c.usid = randomString();
         c.uuid = randomString();
         // region send
-        send(c, true);
-        //client2.connect("121.127.37.17", 6571);
-        net2.handleClient(Packets.WorldStream.class, data -> {
-            Log.info("Received world data: @ bytes.", data.stream.available());
-            finishConnecting();
-        });
+        try {
+            ale.connectClient(ip, pport, () -> {
+                send(c, true);
+                net2.handleClient(Packets.WorldStream.class, data -> {
+                    Log.info("Received world data: @ bytes.", data.stream.available());
+                    finishConnecting();
+                });
+            });
+        } catch (Exception e) {Log.err("Error while ale.connectClient ", e);}
     }
 
     public static void send(Object object, boolean reliable){
@@ -104,5 +111,22 @@ public class Main {
         state.set(GameState.State.playing);
         net.setClientLoaded(true);
         confirm();
+    }
+
+    // anuke
+    public void addPacketHandler(String type, Cons<String> handler){
+        customPacketHandlers.get(type, Seq::new).add(handler);
+    }
+
+    public Seq<Cons<String>> getPacketHandlers(String type){
+        return customPacketHandlers.get(type, Seq::new);
+    }
+
+    public void addBinaryPacketHandler(String type, Cons<byte[]> handler){
+        customBinaryPacketHandlers.get(type, Seq::new).add(handler);
+    }
+
+    public Seq<Cons<byte[]>> getBinaryPacketHandlers(String type){
+        return customBinaryPacketHandlers.get(type, Seq::new);
     }
 }

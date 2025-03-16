@@ -1,49 +1,39 @@
 package example;
 
+import arc.Application;
+import arc.ApplicationListener;
 import arc.Core;
-import arc.graphics.Color;
+import arc.Events;
 import arc.math.Rand;
 import arc.net.Client;
-import arc.net.NetListener;
+import arc.struct.Seq;
 import arc.util.Log;
-import arc.struct.*;
+import arc.util.TaskQueue;
 import arc.util.Threads;
+import arc.util.Timer;
 import arc.util.serialization.Base64Coder;
 import mindustry.Vars;
-import mindustry.core.NetClient;
-import mindustry.core.Platform;
+import mindustry.core.*;
 import mindustry.game.EventType;
+import mindustry.game.Rules;
 import mindustry.gen.*;
-import mindustry.net.*;
-import mindustry.net.Packets.*;
+import mindustry.net.ArcNetProvider;
+import mindustry.net.ArcNetProvider.PacketSerializer;
+import mindustry.net.Net;
+import mindustry.net.NetworkIO;
+import mindustry.net.Packets;
+import mindustry.net.Packets.Connect;
+import mindustry.net.Packets.Disconnect;
+import mindustry.net.Packets.WorldStream;
 
-import java.io.IOException;
+import java.util.Locale;
 import java.util.Random;
-import java.util.TimerTask;
 import java.util.zip.InflaterInputStream;
 
-import mindustry.net.ArcNetProvider.*;
-import java.net.*;
-import java.util.Locale;
-import arc.net.Client.*;
-import java.nio.channels.ClosedSelectorException;
-import arc.Application;
-import arc.*;
-import arc.util.*;
-import mindustry.*;
-import mindustry.core.*;
-import mindustry.ctype.*;
-import mindustry.game.EventType.*;
-import mindustry.mod.*;
-import mindustry.mod.Mods.*;
-import mindustry.net.Net;
-import mindustry.net.*;
-import mindustry.ui.*;
-import arc.Core;
-import arc.ApplicationListener;
-
-import static mindustry.Vars.*;
-import static example.BVars.*;
+import static example.BVars.ip;
+import static example.BVars.pport;
+import static mindustry.Vars.logic;
+import static mindustry.Vars.net;
 
 /*
 https://github.com/Kieaer/MindustryBotnet/tree/main/src/main
@@ -59,21 +49,28 @@ public class Main{
     static Net net2 = new Net(ale);
     static ArcNetProvider p = new ArcNetProvider();
     static Client client;
-    private static final TaskQueue runnables = new TaskQueue();
     static String locale = Locale.getDefault().toString();
     private static final Seq<ApplicationListener> listeners = new Seq<>();
+    static int lastSnapID = 0;
+    static boolean join = false;
     public static void main(String[] args) {
+        Log.info("loading some basa.");
         Vars.loadLogger();
+        Vars.content = new ContentLoader(); // Инициализация контента
+        Vars.content.createBaseContent();  // Загрузка базового контента
+        Vars.world = new World(); // Инициализация игрового мира
         net = net2;
         Vars.netClient = new NetClient();
         logic = new Logic();
         Groups.init();
         Log.info("Inited");
-        if(args != null) {
+
+        if (args != null) {
             for (String arg : args) {
                 Log.info(arg);
             }
         }
+
         // region shiza
         Core.app = new Application() {
             @Override
@@ -104,7 +101,8 @@ public class Main{
                     try {
                         runnable.run();
                     } catch (Exception e) {
-                        // Log.err(e); // TODO.
+                        if(!e.getMessage().contains("ui") && !e.getMessage().contains("TextFormatter") && !e.getMessage().contains("renderer"))
+                            Log.err(e); // TODO.
                     }
                 });
             }
@@ -134,7 +132,7 @@ public class Main{
             String uuid = randomString();
             String usid = randomString();
             int color = new Random().nextInt(999999);;
-            String name = "grely test bot";
+            String name = "greli test bot";
 
             c.name = name;
             c.locale = locale;
@@ -195,15 +193,30 @@ public class Main{
         } catch (Exception e) {
             Log.err("Error!", e);
         }
-
-        // region shiza2
+        Vars.state = new GameState();
+        Vars.state.set(GameState.State.playing);
+        Vars.state.map = null;
+        Vars.state.rules = new Rules();
+        Log.info("GameState initialized.");
+        // region shiza
         Timer.schedule(() -> {
-            Log.info("finishing connect.");
+            Log.info("finishing connect manually.");
             finishConnecting();
-        }, 5);
+        }, 2);
+
         Timer.schedule(() -> {
-            message("test");
-        }, 0, 5);
+            //Log.info("timer! @", join);
+            //if (join) {
+                Player grely = Groups.player.find(p -> p.plainName().contains("грела"));
+                Player bot = Groups.player.find(p -> p.plainName().contains("test bot"));
+                if(bot != null && grely != null) {
+                    Call.clientSnapshot(lastSnapID++, bot.unit().id, false, grely.unit().x, grely.unit().y, grely.unit().aimX, grely.unit().aimY, 0, 0, 0, 0, null, false, false, false, true, null, 0, 0, 0, 0);
+                    Log.info("x@ y@ aimx@ aimy@", grely.unit().x, grely.unit().y, grely.unit().aimX, grely.unit().aimY);
+                }
+                //message("/sync");
+                // Log.info(lastSnapID);
+            //}
+        }, 0, 0.200f);
         while (true) {} // for stupid reasons
     }
 
@@ -221,6 +234,7 @@ public class Main{
     public static void finishConnecting(){
         connectConfirmm();
         net2.setClientLoaded(true);
+        join = true;
     }
 
     public static void message(String message){
@@ -228,6 +242,4 @@ public class Main{
         packet.message = message;
         net2.send(packet, true);
     }
-
-
 }

@@ -33,7 +33,9 @@ dependencies{
     implementation "com.github.Anuken.Mindustry:core:$mindustryVersion"
     annotationProcessor "com.github.Anuken:jabel:$jabelVersion"
 }
-
+/*application {
+    mainClass = 'example.Main' 
+}*/
 jar{
     archiveFileName = "${project.archivesBaseName}.jar"
     from{

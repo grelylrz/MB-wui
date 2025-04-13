@@ -1,9 +1,7 @@
 package example;
 
-import arc.Application;
-import arc.ApplicationListener;
-import arc.Core;
-import arc.Events;
+import arc.*;
+import arc.files.Fi;
 import arc.math.Rand;
 import arc.net.Client;
 import arc.struct.Seq;
@@ -16,6 +14,7 @@ import mindustry.Vars;
 import mindustry.core.*;
 import mindustry.game.EventType;
 import mindustry.game.Rules;
+import mindustry.game.Universe;
 import mindustry.gen.*;
 import mindustry.net.ArcNetProvider;
 import mindustry.net.ArcNetProvider.PacketSerializer;
@@ -46,7 +45,7 @@ https://github.com/Anuken/Arc/blob/master/extensions/arcnet/src/arc/net/Client.j
 public class Main{
     static Platform platform = new Platform() {};
     static Net.NetProvider ale = platform.getNet();
-    static Net net2 = new Net(ale);
+    static Net net2 = new BNet(ale);
     static ArcNetProvider p = new ArcNetProvider();
     static Client client;
     static String locale = Locale.getDefault().toString();
@@ -62,6 +61,8 @@ public class Main{
         net = net2;
         Vars.netClient = new NetClient();
         logic = new Logic();
+        Core.settings = new Settings();
+        Vars.universe = new Universe();
         Groups.init();
         Log.info("Inited");
 
@@ -161,7 +162,7 @@ public class Main{
                 Log.warn("Connect.closed");
             }
             Log.warn("Con. closed, re-joining");
-            main(args);
+            System.exit(0);
         });
         net2.handleClient(WorldStream.class, data -> {
             Log.info("Received world data: @ bytes.", data.stream.available());

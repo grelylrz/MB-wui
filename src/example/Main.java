@@ -3,8 +3,10 @@ package example;
 import arc.*;
 import arc.files.Fi;
 import arc.math.Rand;
+import arc.mock.MockFiles;
 import arc.net.Client;
 import arc.struct.Seq;
+import arc.struct.StringMap;
 import arc.util.Log;
 import arc.util.TaskQueue;
 import arc.util.Threads;
@@ -52,6 +54,7 @@ public class Main{
     private static final Seq<ApplicationListener> listeners = new Seq<>();
     static int lastSnapID = 0;
     static boolean join = false;
+
     public static void main(String[] args) {
         Log.info("loading some basa.");
         Vars.loadLogger();
@@ -61,18 +64,8 @@ public class Main{
         net = net2;
         Vars.netClient = new NetClient();
         logic = new Logic();
-        Core.settings = new Settings();
-        Vars.universe = new Universe();
         Groups.init();
-        Log.info("Inited");
 
-        if (args != null) {
-            for (String arg : args) {
-                Log.info(arg);
-            }
-        }
-
-        // region shiza
         Core.app = new Application() {
             @Override
             public Seq<ApplicationListener> getListeners(){
@@ -93,33 +86,61 @@ public class Main{
 
             @Override
             public void setClipboardText(String s) {
-                Log.info("setClText used");
+                Log.info("setClText used, text @", s);
             }
 
             @Override
             public void post(Runnable runnable){
-                Threads.daemon(() -> {
+                //Threads.daemon(() -> {
                     try {
                         runnable.run();
                     } catch (Exception e) {
-                        if(!e.getMessage().contains("ui") && !e.getMessage().contains("TextFormatter") && !e.getMessage().contains("renderer"))
-                            Log.err(e); // TODO.
+                        net.showError(e);
                     }
-                });
+                //});
             }
 
             @Override
             public void exit() {
                 Log.info("Exit used");
+                System.exit(0);
             }
         };
+        if (args.length == 2) {
+            try {
+                BVars.pport = Integer.parseInt(args[1]);
+            } catch (Exception e) {
+                Log.err("FATAL: Invalid port!");
+                System.exit(2);
+            }
+            BVars.ip = args[0];
+            Log.info("Parsed as @:@", BVars.ip, BVars.pport);
+        } else {
+            Log.err("FATAL: No ip or/and port to join!");
+            System.exit(1);
+        }
+        Core.settings = new Settings();
+        Core.files = new MockFiles();
+        Vars.dataDirectory = Core.files.local("config");
+        Vars.screenshotDirectory = Vars.dataDirectory.child("screenshots/");
+        Vars.customMapDirectory = Vars.dataDirectory.child("maps/");
+        Vars.mapPreviewDirectory = Vars.dataDirectory.child("previews/");
+        Vars.saveDirectory = Vars.dataDirectory.child("saves/");
+        Vars.tmpDirectory = Vars.dataDirectory.child("tmp/");
+        Vars.modDirectory = Vars.dataDirectory.child("mods/");
+        Vars.schematicDirectory = Vars.dataDirectory.child("schematics/");
+        Vars.bebuildDirectory = Vars.dataDirectory.child("be_builds/");
+        // Vars.emptyMap = new Map(new StringMap());
+        Vars.universe = new Universe();
+        Log.info("Loaded!");
         // region packet
         client = new Client(8192, 16384, new PacketSerializer());
         Log.info("generating packet");
         String test = randomString();
         Log.info("Your usid/uuid gen result " + test + " " + test.length());
         if(test.length() != 12) {
-            Log.err("Your usid/uuid gen is gen's >/< than 12 symb.");
+            Log.err("FATAL: Your usid/uuid gen is gen's >/< than 12 symb.");
+            Core.app.exit();
         }
         Log.info("Bot locale " + locale);
         Log.info("Adding handlers...");
@@ -127,18 +148,18 @@ public class Main{
             Log.info(e.player.plainName() + " " + e.message); // TODO
         });
         net2.handleClient(Connect.class, packet -> {
-            Log.info("Connecting to server: @", packet.addressTCP);
+            Log.info("Generated packet for: @", packet.addressTCP);
             var c = new Packets.ConnectPacket();
 
             String uuid = randomString();
             String usid = randomString();
             int color = new Random().nextInt(999999);;
-            String name = "greli test bot";
+            String name = randomString(6);
 
             c.name = name;
             c.locale = locale;
             c.mods = new Seq<>();
-            c.mobile = false;
+            c.mobile = Math.random() < 0.5;
             c.versionType = "official";
             c.color = color;
             c.usid = usid;
@@ -204,20 +225,19 @@ public class Main{
             Log.info("finishing connect manually.");
             finishConnecting();
         }, 2);
-
-        Timer.schedule(() -> {
-            //Log.info("timer! @", join);
-            //if (join) {
-                Player grely = Groups.player.find(p -> p.plainName().contains("грела"));
-                Player bot = Groups.player.find(p -> p.plainName().contains("test bot"));
-                if(bot != null && grely != null) {
-                    Call.clientSnapshot(lastSnapID++, bot.unit().id, false, grely.unit().x, grely.unit().y, grely.unit().aimX, grely.unit().aimY, 0, 0, 0, 0, null, false, false, false, true, null, 0, 0, 0, 0);
-                    Log.info("x@ y@ aimx@ aimy@", grely.unit().x, grely.unit().y, grely.unit().aimX, grely.unit().aimY);
-                }
-                //message("/sync");
-                // Log.info(lastSnapID);
-            //}
-        }, 0, 0.200f);
+        Vars.net.pingHost(ip, pport, host->{
+            Log.info("@ @/@", host.name, host.players, host.playerLimit);
+        }, e->Log.err(e));
+        /*Timer.schedule(() -> {
+            Player bot = Groups.player.find(p -> p.plainName().contains("test bot"));
+            if(bot != null)
+                Log.info(bot.unit().type);
+        }, 0, 0.200f);*/
+        /*Timer.schedule(()->{
+            Vars.world.tiles.eachTile(t->{
+                Log.info(t);
+            });
+        },10);*/
         while (true) {} // for stupid reasons
     }
 
@@ -227,7 +247,16 @@ public class Main{
         return new String(Base64Coder.encode(bytes));
     }
 
+    public static String randomString(int b) {
+        byte[] bytes = new byte[b];
+        new Rand().nextBytes(bytes);
+        return new String(Base64Coder.encode(bytes));
+    }
+
     public static void connectConfirmm() {
+        /*
+        * Call.connectConfirm()
+        * */
         ConnectConfirmCallPacket packet = new ConnectConfirmCallPacket();
         net2.send(packet, true);
     }
@@ -236,11 +265,5 @@ public class Main{
         connectConfirmm();
         net2.setClientLoaded(true);
         join = true;
-    }
-
-    public static void message(String message){
-        SendChatMessageCallPacket packet = new SendChatMessageCallPacket();
-        packet.message = message;
-        net2.send(packet, true);
     }
 }

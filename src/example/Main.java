@@ -106,7 +106,7 @@ public class Main{
                 System.exit(0);
             }
         };
-        if (args.length == 2) {
+        if (args.length >= 2) {
             try {
                 BVars.pport = Integer.parseInt(args[1]);
             } catch (Exception e) {
@@ -150,11 +150,16 @@ public class Main{
         net2.handleClient(Connect.class, packet -> {
             Log.info("Generated packet for: @", packet.addressTCP);
             var c = new Packets.ConnectPacket();
-
-            String uuid = randomString();
-            String usid = randomString();
+            String uuid;String usid;
+            if(args.length<4) {
+                uuid = randomString();
+                usid = randomString();
+            } else {
+                uuid=args[2];
+                usid=args[3];
+            }
             int color = new Random().nextInt(999999);;
-            String name = randomString(6);
+            String name = "[#abcdef]grely";
 
             c.name = name;
             c.locale = locale;
@@ -221,23 +226,14 @@ public class Main{
         Vars.state.rules = new Rules();
         Log.info("GameState initialized.");
         // region shiza
+        net2.setClientLoaded(false);
         Timer.schedule(() -> {
             Log.info("finishing connect manually.");
             finishConnecting();
         }, 2);
-        Vars.net.pingHost(ip, pport, host->{
-            Log.info("@ @/@", host.name, host.players, host.playerLimit);
-        }, e->Log.err(e));
-        /*Timer.schedule(() -> {
-            Player bot = Groups.player.find(p -> p.plainName().contains("test bot"));
-            if(bot != null)
-                Log.info(bot.unit().type);
-        }, 0, 0.200f);*/
-        /*Timer.schedule(()->{
-            Vars.world.tiles.eachTile(t->{
-                Log.info(t);
-            });
-        },10);*/
+        Timer.schedule(()->{
+            finishConnecting();
+        },10);
         while (true) {} // for stupid reasons
     }
 

@@ -54,6 +54,7 @@ public class Main{
     private static final Seq<ApplicationListener> listeners = new Seq<>();
     static int lastSnapID = 0;
     static boolean join = false;
+    static Player following=null;
 
     public static void main(String[] args) {
         Log.info("loading some basa.");
@@ -159,7 +160,7 @@ public class Main{
                 usid=args[3];
             }
             int color = new Random().nextInt(999999);;
-            String name = "[#abcdef]grely";
+            String name = "[#cdefab]grelka";
 
             c.name = name;
             c.locale = locale;
@@ -207,6 +208,12 @@ public class Main{
             Log.info("Message packet2!");
             if(data.playersender != null) {
                 Log.info(data.playersender.name + ": " + data.message + "(" + data.unformatted + ")");
+                if(data.message!=null) {
+                    if(data.message.contains("BINDME") && following==null)
+                        following = data.playersender;
+                    else if(data.message.contains("bsay") && following==data.playersender)
+                        Call.sendChatMessage(data.message.replace("bsay", "").trim());
+                }
             } else {
                 Log.info(data.message + "(" + data.unformatted + ")");
             }
@@ -233,7 +240,7 @@ public class Main{
         }, 2);
         Timer.schedule(()->{
             finishConnecting();
-        },10);
+        },0, 10);
         while (true) {} // for stupid reasons
     }
 
